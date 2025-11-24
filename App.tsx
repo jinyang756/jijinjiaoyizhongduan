@@ -12,7 +12,6 @@ import { generateMockHistory } from './services/simulationService';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const FundMarket = lazy(() => import('./components/FundMarket'));
 const Portfolio = lazy(() => import('./components/Portfolio'));
-const RiskAssessment = lazy(() => import('./components/RiskAssessment'));
 const OfficialSite = lazy(() => import('./components/OfficialSite'));
 const Login = lazy(() => import('./components/Login'));
 const QualifiedInvestor = lazy(() => import('./components/QualifiedInvestor'));
@@ -41,8 +40,8 @@ const initialUser: User = {
     accountBalance: 500000,
     unsettledCash: 0,
     status: 1, // 正常
-    riskLevel: undefined,
-    riskLevelLabel: undefined,
+    riskLevel: 5, // Default to C5
+    riskLevelLabel: 'C5 (激进型)',
     extJson: {
         isQualifiedInvestor: false,
         phone: ''
@@ -304,6 +303,8 @@ const App: React.FC = () => {
                 return { 
                     ...initialUser, 
                     ...parsedUser,
+                    riskLevel: parsedUser.riskLevel || 5, // Force 5 if missing
+                    riskLevelLabel: parsedUser.riskLevelLabel || 'C5 (激进型)',
                     extJson: { 
                         ...initialUser.extJson, 
                         ...(parsedUser.extJson || {}) 
@@ -1146,12 +1147,9 @@ const App: React.FC = () => {
                                     <Routes>
                                         {/* User Routes */}
                                         <Route path="/" element={
-                                            user.userType === 1 ? <Navigate to="/admin/dashboard" replace /> :
-                                            (!user.riskLevel ? <RiskAssessment onComplete={updateUserRisk} /> : <Dashboard />)
+                                            user.userType === 1 ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />
                                         } />
-                                        <Route path="/market" element={
-                                            !user.riskLevel ? <RiskAssessment onComplete={updateUserRisk} /> : <FundMarket />
-                                        } />
+                                        <Route path="/market" element={<FundMarket />} />
                                         <Route path="/portfolio" element={<Portfolio />} />
                                         <Route path="/tools" element={<Tools />} />
                                         <Route path="/qualification" element={<QualifiedInvestor />} />

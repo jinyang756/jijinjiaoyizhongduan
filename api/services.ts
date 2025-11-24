@@ -1,136 +1,225 @@
+import pb from '../src/lib/pocketbase';
+import { FundProduct, FundNav, User, TransactionRecord, UserPosition, FundViewModel } from '../types';
 
-import { createClient } from '@supabase/supabase-js';
-import { FundProduct, FundNav, User, TransactionRecord, UserPosition, SysConfig, DividendRecord, OperationLog } from '../types';
-
-// Vercel 会自动注入这些环境变量
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'YOUR_SUPABASE_URL_HERE';
-const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
+/**
+ * 统一 API 服务层 - PocketBase 实现版
+ */
 export const ApiService = {
-    // --- 认证模块 (Supabase Auth) ---
+    // --- 认证模块 ---
     auth: {
-        // 登录
-        login: async (email: string, password: string) => {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-            if (error) throw error;
-            
-            // 获取扩展的用户信息
-            if (data.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', data.user.id)
-                    .single();
-                return { token: data.session.access_token, user: profile };
-            }
-            throw new Error("Profile not found");
+        login: async (phoneOrEmail: string, password: string) => {
+            // PocketBase 默认使用 email/username 登录
+            // 如果这里是手机号，您需要在 PB 中将 phone 设为 username 或使用 filter 查找
+            // 这里假设用户使用 email 或 username 登录
+            const authData = await pb.collection('users').authWithPassword(phoneOrEmail, password);
+            return { 
+                token: authData.token, 
+                user: mapPbUserToLocal(authData.record) 
+            };
         },
         
-        // 注册
-        signUp: async (email: string, password: string, realName: string) => {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: { real_name: realName } // 存入 metadata
-                }
-            });
-            if (error) throw error;
-            return data;
+        logout: () => {
+            pb.authStore.clear();
         },
 
-        logout: async () => {
-            await supabase.auth.signOut();
+        getCurrentUser: () => {
+            const model = pb.authStore.model;
+            return model ? mapPbUserToLocal(model) : null;
         },
-        
-        getProfile: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Not logged in");
-            
-            const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-            return data;
+
+        // 更新用户信息 (如认证状态)
+        updateProfile: async (userId: string, data: Partial<User>) => {
+            const record = await pb.collection('users').update(userId, {
+                realName: data.realName,
+                userType: data.userType,
+                accountBalance: data.accountBalance,
+                riskLevel: data.riskLevel,
+                isQualifiedInvestor: data.extJson?.isQualifiedInvestor,
+                phone: data.extJson?.phone
+            });
+            return mapPbUserToLocal(record);
         }
     },
 
     // --- 基金产品模块 ---
     fund: {
         getList: async () => {
-            const { data, error } = await supabase
-                .from('fund_products')
-                .select('*')
-                .order('id');
-            if (error) throw error;
-            return data as FundProduct[];
-        },
-            
-        getDetail: async (id: number) => {
-            const { data, error } = await supabase
-                .from('fund_products')
-                .select('*')
-                .eq('id', id)
-                .single();
-            if (error) throw error;
-            return data as FundProduct;
+            const records = await pb.collection('fund_products').getFullList({
+                sort: '-created',
+            });
+            return records.map(mapPbFundToLocal);
         },
 
-        // 管理端：创建/更新基金
-        createOrUpdate: async (fund: Partial<FundProduct>) => {
-            const { error } = await supabase
-                .from('fund_products')
-                .upsert(fund);
-            if (error) throw error;
+        getDetail: async (id: string) => {
+            const record = await pb.collection('fund_products').getOne(id);
+            return mapPbFundToLocal(record);
+        },
+
+        // 管理端：创建/更新
+        create: async (fund: Partial<FundProduct>) => {
+            return await pb.collection('fund_products').create({
+                ...fund,
+                // 转换 extJson 等字段适配 PB 结构
+                manager: fund.extJson?.manager,
+                strategy: fund.extJson?.strategy
+            });
+        },
+        
+        update: async (id: string, fund: Partial<FundProduct>) => {
+            return await pb.collection('fund_products').update(id, {
+                ...fund,
+                manager: fund.extJson?.manager,
+                strategy: fund.extJson?.strategy
+            });
         }
     },
 
     // --- 交易模块 ---
     transaction: {
-        buy: async (fundId: number, amount: number) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if(!user) throw new Error("No user");
-
-            const { error } = await supabase
-                .from('transactions')
-                .insert({
-                    user_id: user.id,
-                    fund_id: fundId,
-                    amount: amount,
-                    trade_type: 1, // 申购
-                    trade_status: 1 // 待确认
-                });
-            if(error) throw error;
-            return { success: true };
+        // 提交交易申请
+        create: async (tx: Partial<TransactionRecord>) => {
+            if (!pb.authStore.model) throw new Error("Not logged in");
+            
+            return await pb.collection('transactions').create({
+                tradeNo: tx.tradeNo,
+                user: pb.authStore.model.id,
+                fund: tx.fundId, // PB 使用 ID 关联
+                tradeType: tx.tradeType,
+                amount: tx.tradeAmount,
+                shares: tx.tradeShares,
+                nav: tx.nav,
+                status: tx.tradeStatus, // 1=待确认
+                fee: tx.feeAmount,
+                signature: tx.signature,
+                contractSignTime: tx.contractSignTime
+            });
         },
 
-        getList: async () => {
-             const { data, error } = await supabase
-                .from('transactions')
-                .select(`
-                    *,
-                    fund_info:fund_products(fund_name, fund_code)
-                `)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            return data;
+        // 获取当前用户的交易列表
+        getMyList: async () => {
+            if (!pb.authStore.model) return [];
+            const records = await pb.collection('transactions').getFullList({
+                sort: '-created',
+                filter: `user = "${pb.authStore.model.id}"`,
+                expand: 'fund' // 关联查询基金信息
+            });
+            return records.map(mapPbTxToLocal);
+        },
+
+        // 管理端：获取所有待审核交易
+        getPendingList: async () => {
+            const records = await pb.collection('transactions').getFullList({
+                sort: '-created',
+                filter: `status = 1 || status = 3`, // 待确认 或 清算中
+                expand: 'fund,user'
+            });
+            return records.map(mapPbTxToLocal);
+        },
+
+        // 管理端：审核交易
+        audit: async (txId: string, status: number, remark?: string) => {
+            return await pb.collection('transactions').update(txId, {
+                status: status,
+                remark: remark
+            });
         }
     },
-    
-    // --- 资产模块 ---
-    asset: {
-        // 由于计算持仓比较复杂，通常建议写一个 Supabase Database Function (RPC)
-        getMyHoldings: async () => {
-            // 这里调用你在 Supabase 定义好的 SQL 函数
-            // const { data, error } = await supabase.rpc('get_user_holdings');
-            // return data;
-            return []; // 暂时返回空，需在数据库端实现聚合逻辑
+
+    // --- 净值管理 ---
+    nav: {
+        getHistory: async (fundId: string) => {
+            const records = await pb.collection('fund_nav_logs').getFullList({
+                sort: 'navDate',
+                filter: `fund = "${fundId}"`
+            });
+            return records.map(r => ({
+                id: r.id, // string ID
+                fundId: r.fund,
+                navDate: r.navDate, // string 'YYYY-MM-DD'
+                nav: r.nav,
+                navAccumulated: r.navAccumulated,
+                dailyReturnRate: r.dailyReturnRate,
+                createTime: r.created
+            }));
         }
     }
 };
+
+// --- Mappers (数据转换层: PB <-> App Type) ---
+
+const mapPbUserToLocal = (record: any): User => ({
+    id: record.id, // PocketBase ID is string (15 chars)
+    username: record.username,
+    realName: record.realName,
+    userType: record.userType, // 1=Admin, 2=Investor
+    virtualAccount: record.virtualAccount,
+    accountBalance: record.accountBalance,
+    status: record.accountStatus, // 1=Normal
+    riskLevel: record.riskLevel,
+    createTime: record.created,
+    extJson: {
+        isQualifiedInvestor: record.isQualifiedInvestor,
+        phone: record.phone, // Assuming you added phone field
+        roleName: record.roleName
+    }
+});
+
+const mapPbFundToLocal = (record: any): FundViewModel => ({
+    id: record.id,
+    fundCode: record.fundCode,
+    fundName: record.fundName,
+    fundType: record.fundType,
+    fundTypeLabel: getTypeLabel(record.fundType),
+    riskLevel: record.riskLevel,
+    riskLevelLabel: `R${record.riskLevel}`,
+    nav: record.currentNav,
+    navAccumulated: record.currentNavAccumulated,
+    yearToDate: record.yearToDate,
+    maxDrawdown: record.maxDrawdown,
+    sharpeRatio: record.sharpeRatio,
+    issueDate: record.issueDate,
+    lockupPeriod: record.lockupPeriod,
+    navInitial: record.navInitial,
+    subscriptionFeeRate: record.subscriptionFeeRate,
+    redemptionFeeRate: record.redemptionFeeRate,
+    managementFeeRate: record.managementFeeRate,
+    status: record.status,
+    statusLabel: getStatusLabel(record.status),
+    simulateSettlementDays: record.settlementDays,
+    extJson: {
+        manager: record.manager,
+        strategy: record.strategy,
+        description: record.description
+    },
+    createTime: record.created,
+    updateTime: record.updated
+});
+
+const mapPbTxToLocal = (record: any): TransactionRecord => ({
+    id: record.id,
+    tradeNo: record.tradeNo,
+    userId: record.user,
+    fundId: record.fund,
+    tradeType: record.tradeType,
+    tradeTypeLabel: getTradeTypeLabel(record.tradeType),
+    tradeAmount: record.amount,
+    tradeShares: record.shares,
+    nav: record.nav,
+    navDate: record.created.split(' ')[0], // Approximation
+    feeAmount: record.fee,
+    actualAmount: record.amount, // Simplification
+    tradeStatus: record.status,
+    tradeStatusLabel: getTxStatusLabel(record.status),
+    applyTime: record.created,
+    signature: record.signature,
+    fundInfo: record.expand?.fund ? {
+        fundCode: record.expand.fund.fundCode,
+        fundName: record.expand.fund.fundName
+    } : undefined
+});
+
+// Helpers
+function getTypeLabel(t: number) { return ['股票型','债券型','混合型','货币型','期货型'][t-1] || '未知'; }
+function getStatusLabel(s: number) { return ['募集期','存续期','清算期','暂停'][s-1] || '未知'; }
+function getTradeTypeLabel(t: number) { return ['申购','赎回','充值','分红'][t-1] || '其他'; }
+function getTxStatusLabel(s: number) { return ['待确认','已确认','清算中','已完成','冷静期','已驳回'][s-1] || '未知'; }

@@ -1,0 +1,405 @@
+[
+    {
+        "id": "users",
+        "name": "users",
+        "type": "auth",
+        "system": false,
+        "schema": [
+            {
+                "id": "realName",
+                "name": "realName",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "userType",
+                "name": "userType",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "virtualAccount",
+                "name": "virtualAccount",
+                "type": "text",
+                "required": false,
+                "unique": true,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "accountBalance",
+                "name": "accountBalance",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": 0, "max": null }
+            },
+            {
+                "id": "riskLevel",
+                "name": "riskLevel",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": 1, "max": 5 }
+            },
+            {
+                "id": "isQualifiedInvestor",
+                "name": "isQualifiedInvestor",
+                "type": "bool",
+                "required": false,
+                "unique": false,
+                "options": {}
+            },
+            {
+                "id": "phone",
+                "name": "phone",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "accountStatus",
+                "name": "accountStatus",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            }
+        ],
+        "listRule": "id = @request.auth.id",
+        "viewRule": "id = @request.auth.id",
+        "createRule": "",
+        "updateRule": "id = @request.auth.id",
+        "deleteRule": "id = @request.auth.id",
+        "options": {
+            "allowEmailAuth": true,
+            "allowOAuth2Auth": true,
+            "allowUsernameAuth": true,
+            "exceptEmailDomains": null,
+            "manageRule": null,
+            "minPasswordLength": 8,
+            "onlyEmailDomains": null,
+            "requireEmail": false
+        }
+    },
+    {
+        "id": "fund_products",
+        "name": "fund_products",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "id": "fundCode",
+                "name": "fundCode",
+                "type": "text",
+                "required": true,
+                "unique": true,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "fundName",
+                "name": "fundName",
+                "type": "text",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "fundType",
+                "name": "fundType",
+                "type": "number",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "currentNav",
+                "name": "currentNav",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "currentNavAccumulated",
+                "name": "currentNavAccumulated",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "manager",
+                "name": "manager",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "strategy",
+                "name": "strategy",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "riskLevel",
+                "name": "riskLevel",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "status",
+                "name": "status",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "subscriptionFeeRate",
+                "name": "subscriptionFeeRate",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "redemptionFeeRate",
+                "name": "redemptionFeeRate",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "managementFeeRate",
+                "name": "managementFeeRate",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "lockupPeriod",
+                "name": "lockupPeriod",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "settlementDays",
+                "name": "settlementDays",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "issueDate",
+                "name": "issueDate",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "description",
+                "name": "description",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            }
+        ],
+        "listRule": "",
+        "viewRule": "",
+        "createRule": "@request.auth.userType = 1",
+        "updateRule": "@request.auth.userType = 1",
+        "deleteRule": "@request.auth.userType = 1",
+        "options": {}
+    },
+    {
+        "id": "transactions",
+        "name": "transactions",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "id": "tradeNo",
+                "name": "tradeNo",
+                "type": "text",
+                "required": true,
+                "unique": true,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "user",
+                "name": "user",
+                "type": "relation",
+                "required": true,
+                "unique": false,
+                "options": {
+                    "collectionId": "users",
+                    "cascadeDelete": false,
+                    "minSelect": null,
+                    "maxSelect": 1,
+                    "displayFields": []
+                }
+            },
+            {
+                "id": "fund",
+                "name": "fund",
+                "type": "relation",
+                "required": false,
+                "unique": false,
+                "options": {
+                    "collectionId": "fund_products",
+                    "cascadeDelete": false,
+                    "minSelect": null,
+                    "maxSelect": 1,
+                    "displayFields": []
+                }
+            },
+            {
+                "id": "tradeType",
+                "name": "tradeType",
+                "type": "number",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "amount",
+                "name": "amount",
+                "type": "number",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "shares",
+                "name": "shares",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "nav",
+                "name": "nav",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "fee",
+                "name": "fee",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "status",
+                "name": "status",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "signature",
+                "name": "signature",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            },
+            {
+                "id": "remark",
+                "name": "remark",
+                "type": "text",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "" }
+            }
+        ],
+        "listRule": "@request.auth.id = user || @request.auth.userType = 1",
+        "viewRule": "@request.auth.id = user || @request.auth.userType = 1",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.userType = 1",
+        "deleteRule": "@request.auth.userType = 1",
+        "options": {}
+    },
+    {
+        "id": "fund_nav_logs",
+        "name": "fund_nav_logs",
+        "type": "base",
+        "system": false,
+        "schema": [
+            {
+                "id": "fund",
+                "name": "fund",
+                "type": "relation",
+                "required": true,
+                "unique": false,
+                "options": {
+                    "collectionId": "fund_products",
+                    "cascadeDelete": true,
+                    "minSelect": null,
+                    "maxSelect": 1,
+                    "displayFields": []
+                }
+            },
+            {
+                "id": "navDate",
+                "name": "navDate",
+                "type": "text",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+            },
+            {
+                "id": "nav",
+                "name": "nav",
+                "type": "number",
+                "required": true,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "navAccumulated",
+                "name": "navAccumulated",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            },
+            {
+                "id": "dailyReturnRate",
+                "name": "dailyReturnRate",
+                "type": "number",
+                "required": false,
+                "unique": false,
+                "options": { "min": null, "max": null }
+            }
+        ],
+        "listRule": "",
+        "viewRule": "",
+        "createRule": "@request.auth.userType = 1",
+        "updateRule": "@request.auth.userType = 1",
+        "deleteRule": "@request.auth.userType = 1",
+        "options": {}
+    }
+]

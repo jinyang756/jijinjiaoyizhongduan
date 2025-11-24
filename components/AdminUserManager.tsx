@@ -38,6 +38,8 @@ const AdminUserManager: React.FC = () => {
                 userType: 2,
                 status: 1,
                 accountBalance: 0,
+                riskLevel: 5,
+                riskLevelLabel: 'C5 (激进型)',
                 extJson: { isQualifiedInvestor: false }
             });
         }
@@ -315,6 +317,8 @@ const AdminUserManager: React.FC = () => {
                                         />
                                         <label className="text-sm text-gray-700">认证为合格投资者</label>
                                     </div>
+                                    {/* Admin hidden field: riskLevel is defaulted to 5 */}
+                                    <div className="text-xs text-gray-400">默认风险等级: C5 (激进型)</div>
                                 </div>
                             ) : (
                                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 space-y-3">
